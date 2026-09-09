@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Almacén - Vista Móvil</title>
+
+    <!-- Cargamos SheetJS de forma segura desde un servidor alternativo global o respaldo local -->
+    <script src="https://unpkg.com"></script>
+
+    <style>
+        /* Estilos base integrados para independizar de Bootstrap si no hay red */
+        html, body {
+            height: 100%;
+            margin: 0;
+            background-image: url("opc2.jpg");
+            background-size: cover;
+            background-position: center top;
+            background-repeat: no-repeat;
+            background-attachment: scroll; 
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background-color: #f4f6f9;
+        }
+
+        .navbar {
+            background: linear-gradient(90deg, #002b5c, #005ea8);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, .20);
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar-brand { 
+            color: #FFF !important; 
+            font-weight: bold; 
+            font-size: 18px;
+            text-decoration: none;
+        }
+
+        .btn-regresar { 
+            color: #ffd166; 
+            font-size: 24px; 
+            text-decoration: none; 
+            font-weight: bold;
+        }
+
+        .main-container { padding: 15px; margin-top: 10px; }
+
+        .search-wrapper {
+            background: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            border: 2px solid #005ea8;
+            margin-bottom: 15px;
+        }
+
+        #searchInputAdvanced { 
+            border: none; 
+            outline: none; 
+            width: 100%; 
+            font-size: 16px; 
+            color: #333; 
+        }
+
+        .results-counter {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            background: rgba(0, 43, 92, 0.85);
+            padding: 6px 14px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        .results-container { max-height: 72vh; overflow-y: auto; padding-bottom: 50px; }
+
+        /* Tarjetas estilo  */
+        .product-card {
+            background: white;
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+            border: 1px solid #eef2f5;
+        }
+
+        .product-img-box {
+            width: 90px; height: 90px; min-width: 90px;
+            border-radius: 8px; overflow: hidden;
+            background-color: #e2e8f0; border: 1px solid #cbd5e1;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: bold; color: #718096; font-size: 12px;
+        }
+
+        .product-img-box img { width: 100%; height: 100%; object-fit: cover; }
+        .product-info-box { flex-grow: 1; }
+        .product-title { font-size: 15px; font-weight: 700; color: #002b5c; margin-bottom: 4px; text-transform: uppercase; }
+        .product-subtitle { font-size: 13px; color: #4a5568; margin-bottom: 8px; }
+        .product-sku { font-size: 11px; font-weight: bold; color: #005ea8; background: #e6f0fa; padding: 3px 10px; border-radius: 20px; display: inline-block; }
+        
+        /* Alertas visibles */
+        .status-alert {
+            padding: 10px; border-radius: 8px; text-align: center; font-size: 14px; margin-bottom: 15px;
+            background: #e2e8f0; color: #2d3748;
+        }
+        .status-error { background: #fed7d7; color: #9b2c2c; border: 1px solid #feb2b2; }
+    </style>
+</head>
+
+<body>
+
+    <!-- NAVBAR MÓVIL -->
+    <div class="navbar">
+        <a href="index.html" class="btn-regresar">&#8592;</a>
+        <span class="navbar-brand">ALMACEN DE PARTES</span>
+        <div style="width: 24px;"></div>
+    </div>
+
+    <!-- CONTENEDOR PRINCIPAL -->
+    <div class="main-container">
+        <div class="search-wrapper">
+            <input id="searchInputAdvanced" type="text" placeholder="Escribe para buscar (Código o Nombre)..." oninput="filtrarContenidoMovil()">
+        </div>
+
+        <div>
+            <div id="contadorResultados" class="results-counter" style="display: none;">0 artículos encontrados</div>
+        </div>
+
+        <!-- Zona de Alertas Integrada -->
+        <div id="mensajeEstado" class="status-alert">Iniciando busqueda...</div>
+
+        <div class="results-container" id="listaResultados"></div>
+    </div>
+
+    <script>
+        let datosExcel = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            // Intentar cargar SheetJS de respaldo si el primero falló por bloqueo de red
+            if (typeof XLSX === 'undefined') {
+                const scriptRespaldo = document.createElement('script');
+                scriptRespaldo.src = "https://sheetjs.com";
+                scriptRespaldo.onload = () => cargarExcelMovil();
+                scriptRespaldo.onerror = () => {
+                    const estado = document.getElementById('mensajeEstado');
+                    estado.className = "status-alert status-error";
+                    estado.innerText = "❌ Tu red bloquea las librerías de Excel de internet. Debes descargar el archivo xlsx.full.min.js y guardarlo localmente.";
+                };
+                document.head.appendChild(scriptRespaldo);
+            } else {
+                cargarExcelMovil();
+            }
+        });
+
+        function cargarExcelMovil() {
+            const estado = document.getElementById('mensajeEstado');
+            estado.innerHTML = 'Sincronizando inventario móvil...';
+            
+            fetch('busqueda avanzada.xlsx')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error("No se encontró el archivo 'busqueda avanzada.xlsx'. Asegúrate de que esté exactamente en la misma carpeta que tus archivos HTML.");
+                    }
+                    return response.arrayBuffer();
+                })
+                .then(data => {
+                    const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
+                    
+                    // Buscar la pestaña ignorando espacios o acentos accidentales
+                    const nombreHojaReal = workbook.SheetNames.find(n => n.trim().toLowerCase().replace(/á/g, 'a') === "busqueda avanzada");
+                    
+                    if (!nombreHojaReal) {
+                        throw new Error("No se encontró la pestaña 'Busqueda avanzada' dentro del archivo de Excel.");
+                    }
+                    
+                    const hojaData = workbook.Sheets[nombreHojaReal];
+                    const filasJson = XLSX.utils.sheet_to_json(hojaData);
+                    
+                    if (filasJson.length > 0) {
+                        datosExcel = filasJson;
+                        estado.style.display = 'none'; // Éxito completo, ocultamos la alerta
+                        renderizarTarjetasAutoZone(datosExcel);
+                    } else {
+                        throw new Error("La pestaña 'Busqueda avanzada' está vacía.");
+                    }
+                })
+                .catch(error => {
+                    console.error(error);
+                    estado.className = "status-alert status-error";
+                    estado.innerText = "⚠️ " + (error.message || "Error al leer los datos.");
+                });
+        }
+
+        function renderizarTarjetasAutoZone(listaProductos) {
+            const contenedor = document.getElementById('listaResultados');
+            const contador = document.getElementById('contadorResultados');
+            contenedor.innerHTML = '';
+
+            contador.style.display = 'inline-block';
+            contador.innerText = `${listaProductos.length} artículos encontrados`;
+
+            if (listaProductos.length === 0) {
+                contenedor.innerHTML = `
+                    <div style="text-align: center; padding: 20px; background: white; border-radius: 8px; color: #718096;">
+                        No hay repuestos que coincidan con tu búsqueda.
+                    </div>`;
+                return;
+            }
+
+            listaProductos.forEach(producto => {
+                let codigo = 'N/A', nombreTecnico = 'Sin nombre técnico', nombreComun = '', archivoImagen = '';
+
+                // Mapear dinámicamente limpiando espacios invisibles de las columnas del Excel
+                Object.keys(producto).forEach(col => {
+                    const colLimpia = col.trim().toLowerCase().replace(/[\u00E0-\u00FC]/g, ""); // quita acentos
+                    if (colLimpia.includes('codigo')) codigo = producto[col];
+                    if (colLimpia.includes('tecnico')) nombreTecnico = producto[col];
+                    if (colLimpia.includes('comun')) nombreComun = producto[col];
+                    if (colLimpia.includes('imagen')) archivoImagen = producto[col];
+                });
+
+                let imgHtml = `<span>SIN FOTO</span>`;
+                if (archivoImagen && archivoImagen.trim() !== '' && archivoImagen !== 'PDT' && archivoImagen !== 'Firma') {
+                    imgHtml = `<img src="${archivoImagen.trim()}" onerror="this.onerror=null; this.parentElement.innerHTML='<span>ERROR IMG</span>';">`;
+                }
+
+                contenedor.innerHTML += `
+                    <div class="product-card">
+                        <div class="product-img-box">${imgHtml}</div>
+${nombreTecnico}
+${nombreComun ? <div class="product-subtitle">${nombreComun}</div> : ''}
+CÓDIGO: ${codigo}
+
+
+`;
+});
+}
+// Función de filtrado sin acentos en el nombre para evitar conflictos de sistema
+function filtrarContenidoMovil() {
+const termino = document.getElementById('searchInputAdvanced').value.toLowerCase().trim();
+if (termino === '') {
+renderizarTarjetasAutoZone(datosExcel);
+return;
+}
+const resultadoFiltrado = datosExcel.filter(producto => {
+return Object.values(producto).some(valor =>
+String(valor).toLowerCase().includes(termino)
+);
+});
+renderizarTarjetasAutoZone(resultadoFiltrado);
+}
+
+
