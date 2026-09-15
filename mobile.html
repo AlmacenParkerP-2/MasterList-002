@@ -11,17 +11,20 @@
 
     <style>
         /* Estilos base integrados para independizar de Bootstrap si no hay red */
-        html, body {
-            height: 100%;
-            margin: 0;
-            background-image: url("opc2.jpg");
-            background-size: cover;
-            background-position: center top;
-            background-repeat: no-repeat;
-            background-attachment: scroll; 
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: #f4f6f9;
-        }
+        html,
+body {
+    height: 100vh; /* Utiliza el 100% de la ventana visible */
+    margin: 0;
+    padding: 0;
+    background-image: url("opc2.jpg");
+    background-size: cover; /* Ajusta la imagen para cubrir toda la pantalla */
+    background-position: center center; /* Centra la imagen vertical y horizontalmente */
+    background-repeat: no-repeat;
+    background-attachment: fixed; /* Mantiene el fondo fijo al hacer scroll */
+    font-family: Segoe UI, Tahoma, sans-serif;
+    overflow-x: hidden; /* Evita que aparezca una barra de scroll horizontal molesta */
+}
+
 
         .navbar {
             background: linear-gradient(90deg, #002b5c, #005ea8);
