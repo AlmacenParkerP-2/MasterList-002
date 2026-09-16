@@ -1,255 +1,710 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Almacén - Vista Móvil</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almacén de Partes - Búsqueda Avanzada</title>
 
-    <!-- CORRECCIÓN CRÍTICA: Enlace oficial, completo y funcional a la librería de SheetJS -->
-    <script src="https://jsdelivr.net"></script>
+<!-- Lector de archivos Excel -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
-    <style>
-        html, body {
-            height: 100vh;
-            margin: 0;
-            padding: 0;
-            background-image: url("opc2.jpg");
-            background-size: cover;
-            background-position: center top;
-            background-repeat: no-repeat;
-            background-attachment: fixed; 
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: #f4f6f9;
-            overflow-x: hidden;
-        }
+<style>
+*{box-sizing:border-box}
 
-        .navbar {
-            background: linear-gradient(90deg, #002b5c, #005ea8);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, .20);
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
+html,body{
+    margin:0;
+    padding:0;
+    min-height:100%;
+    font-family:"Segoe UI",Arial,sans-serif;
+    background:#f2f4f7;
+    color:#222;
+}
 
-        .navbar-brand { 
-            color: #FFF !important; 
-            font-weight: bold; 
-            font-size: 18px;
-            text-decoration: none;
-            cursor: pointer;
-        }
+body{
+    background-image:url("opc2.jpg");
+    background-size:cover;
+    background-position:center top;
+    background-attachment:fixed;
+}
 
-        .btn-regresar { 
-            color: #ffd166; 
-            font-size: 24px; 
-            text-decoration: none; 
-            font-weight: bold;
-        }
+/* BARRA SUPERIOR */
+.navbar{
+    position:sticky;
+    top:0;
+    z-index:1000;
+    height:62px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 14px;
+    background:linear-gradient(90deg,#002b5c,#005ea8);
+    box-shadow:0 3px 12px rgba(0,0,0,.25);
+}
 
-        .main-container { padding: 15px; margin-top: 10px; }
+.btn-regresar{
+    color:#fff;
+    text-decoration:none;
+    font-size:30px;
+    line-height:1;
+    width:42px;
+}
 
-        .search-wrapper {
-            background: white;
-            padding: 12px 20px;
-            border-radius: 50px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            border: 2px solid #005ea8;
-            margin-bottom: 15px;
-        }
+.navbar-brand{
+    color:#fff;
+    font-weight:700;
+    font-size:17px;
+    letter-spacing:.3px;
+}
 
-        #searchInputAdvanced { 
-            border: none; 
-            outline: none; 
-            width: 100%; 
-            font-size: 16px; 
-            color: #333; 
-            background: transparent;
-        }
+.nav-spacer{width:42px}
 
-        .results-counter {
-            font-size: 14px;
-            font-weight: 600;
-            color: white;
-            background: rgba(0, 43, 92, 0.85);
-            padding: 6px 14px;
-            border-radius: 20px;
-            display: inline-block;
-            margin-bottom: 15px;
-        }
+/* CONTENIDO */
+.main-container{
+    width:100%;
+    max-width:900px;
+    margin:0 auto;
+    padding:16px 12px 50px;
+}
 
-        .results-container { max-height: 72vh; overflow-y: auto; padding-bottom: 50px; }
+/* BUSCADOR TIPO APP */
+.search-box{
+    background:#fff;
+    border:1px solid #d8dde3;
+    border-radius:5px;
+    height:54px;
+    display:flex;
+    align-items:center;
+    box-shadow:0 2px 8px rgba(0,0,0,.12);
+    margin-bottom:12px;
+}
 
-        .product-card {
-            background: white;
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 12px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.06);
-            display: flex;
-            gap: 15px;
-            align-items: flex-start;
-            border: 1px solid #eef2f5;
-        }
+.search-icon{
+    width:50px;
+    text-align:center;
+    font-size:25px;
+    color:#4b5563;
+}
 
-        .product-img-box {
-            width: 90px; height: 90px; min-width: 90px;
-            border-radius: 8px; overflow: hidden;
-            background-color: #e2e8f0; border: 1px solid #cbd5e1;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: bold; color: #718096; font-size: 12px;
-        }
+#searchInputAdvanced{
+    flex:1;
+    height:100%;
+    border:0;
+    outline:0;
+    font-size:18px;
+    color:#222;
+    background:transparent;
+    min-width:0;
+}
 
-        .product-img-box img { width: 100%; height: 100%; object-fit: cover; }
-        .product-info-box { flex-grow: 1; }
-        .product-title { font-size: 15px; font-weight: 700; color: #002b5c; margin-bottom: 4px; text-transform: uppercase; }
-        .product-subtitle { font-size: 13px; color: #4a5568; margin-bottom: 8px; }
-        .product-sku { font-size: 11px; font-weight: bold; color: #005ea8; background: #e6f0fa; padding: 3px 10px; border-radius: 20px; display: inline-block; }
-        
-        .status-alert {
-            padding: 10px; border-radius: 8px; text-align: center; font-size: 14px; margin-bottom: 15px;
-            background: #e2e8f0; color: #2d3748;
-        }
-        .status-error { background: #fed7d7; color: #9b2c2c; border: 1px solid #feb2b2; }
-    </style>
+#searchInputAdvanced::placeholder{
+    color:#777;
+}
+
+.clear-btn{
+    width:48px;
+    height:100%;
+    border:0;
+    background:transparent;
+    color:#777;
+    font-size:23px;
+    cursor:pointer;
+    display:none;
+}
+
+/* BOTÓN FILTRAR */
+.filter-row{
+    display:flex;
+    align-items:center;
+    margin-bottom:8px;
+}
+
+.filter-button{
+    background:#fff;
+    border:1px solid #aaa;
+    border-radius:4px;
+    padding:10px 14px;
+    font-size:14px;
+    cursor:pointer;
+    box-shadow:0 1px 3px rgba(0,0,0,.12);
+}
+
+.filter-button span{
+    font-size:18px;
+    margin-right:5px;
+}
+
+/* LÍNEA COMO EN LA REFERENCIA */
+.separator{
+    height:7px;
+    background:#222;
+    border-radius:0 0 4px 4px;
+    margin:0 0 18px;
+}
+
+/* ESTADO */
+.status{
+    background:#fff;
+    border-radius:8px;
+    padding:14px;
+    text-align:center;
+    color:#555;
+    margin-bottom:14px;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.status.error{
+    background:#fff0f0;
+    color:#a40000;
+    border:1px solid #f0b5b5;
+}
+
+/* CONTADOR */
+.results-info{
+    font-size:13px;
+    color:#555;
+    margin:0 3px 10px;
+    display:none;
+}
+
+/* RESULTADOS */
+.results-container{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+}
+
+/* PRODUCTO SIN TABLA */
+.product-card{
+    background:#fff;
+    border:1px solid #e1e4e8;
+    border-radius:4px;
+    min-height:165px;
+    padding:15px 14px;
+    display:flex;
+    gap:16px;
+    box-shadow:0 2px 7px rgba(0,0,0,.08);
+}
+
+.product-image{
+    width:105px;
+    min-width:105px;
+    height:125px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    overflow:hidden;
+}
+
+.product-image img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.no-image{
+    color:#999;
+    font-size:11px;
+    text-align:center;
+    border:1px solid #ddd;
+    width:85px;
+    height:105px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+.product-info{
+    flex:1;
+    min-width:0;
+}
+
+.product-common{
+    font-size:17px;
+    line-height:1.25;
+    font-weight:700;
+    color:#222;
+    margin-bottom:8px;
+}
+
+.product-tech{
+    font-size:13px;
+    color:#555;
+    line-height:1.35;
+    margin-bottom:9px;
+}
+
+.product-code{
+    font-size:13px;
+    color:#666;
+    margin-bottom:5px;
+}
+
+.product-code strong{
+    color:#222;
+}
+
+.product-firma{
+    font-size:12px;
+    color:#777;
+}
+
+.product-actions{
+    margin-top:10px;
+}
+
+.detail-button{
+    border:1px solid #f28c00;
+    background:#fff8ed;
+    color:#333;
+    border-radius:4px;
+    padding:7px 12px;
+    font-size:12px;
+    cursor:pointer;
+}
+
+/* PANEL DE DETALLE */
+.detail-panel{
+    display:none;
+    margin-top:8px;
+    padding:12px;
+    background:#f7f9fb;
+    border-top:1px solid #e1e4e8;
+    border-radius:0 0 4px 4px;
+}
+
+.detail-panel div{
+    margin:4px 0;
+    font-size:13px;
+}
+
+/* INICIO SIN RESULTADOS */
+.empty{
+    background:#fff;
+    padding:30px 18px;
+    border-radius:7px;
+    text-align:center;
+    color:#666;
+    box-shadow:0 2px 8px rgba(0,0,0,.08);
+}
+
+.empty .big-icon{
+    font-size:42px;
+    margin-bottom:8px;
+}
+
+.empty strong{
+    display:block;
+    color:#333;
+    font-size:17px;
+    margin-bottom:5px;
+}
+
+/* MÓVIL */
+@media(max-width:600px){
+    .navbar{
+        height:55px;
+    }
+
+    .navbar-brand{
+        font-size:15px;
+    }
+
+    .main-container{
+        padding:10px 7px 35px;
+    }
+
+    .search-box{
+        height:51px;
+    }
+
+    #searchInputAdvanced{
+        font-size:16px;
+    }
+
+    .product-card{
+        min-height:145px;
+        padding:12px 10px;
+        gap:11px;
+    }
+
+    .product-image{
+        width:82px;
+        min-width:82px;
+        height:105px;
+    }
+
+    .product-common{
+        font-size:15px;
+    }
+
+    .product-tech{
+        font-size:12px;
+    }
+}
+</style>
 </head>
 
 <body>
 
-    <!-- NAVBAR MÓVIL -->
-    <div class="navbar">
-        <a href="index.html" class="btn-regresar">←</a>
-        <span class="navbar-brand" onclick="window.location.reload();">ALMACÉN DE PARTES</span>
-        <div style="width: 24px;"></div>
+<div class="navbar">
+    <a href="index.html" class="btn-regresar" title="Regresar">←</a>
+    <div class="navbar-brand">ALMACÉN DE PARTES</div>
+    <div class="nav-spacer"></div>
+</div>
+
+<div class="main-container">
+
+    <div class="search-box">
+        <div class="search-icon">⌕</div>
+        <input
+            id="searchInputAdvanced"
+            type="search"
+            autocomplete="off"
+            placeholder="Buscar por código o descripción..."
+            aria-label="Buscar"
+        >
+        <button id="clearBtn" class="clear-btn" type="button" title="Limpiar">×</button>
     </div>
 
-    <!-- CONTENEDOR PRINCIPAL -->
-    <div class="main-container">
-        <div class="search-wrapper">
-            <!-- Cambiado a evento onkeyup para procesar búsquedas instantáneas -->
-            <input id="searchInputAdvanced" type="text" placeholder="Escribe para buscar (Código o Nombre)..." onkeyup="filtrarContenidoMovil()">
-        </div>
-
-        <div>
-            <div id="contadorResultados" class="results-counter" style="display: none;">0 artículos encontrados</div>
-        </div>
-
-        <!-- Zona de Alertas Integrada -->
-        <div id="mensajeEstado" class="status-alert">Iniciando búsqueda...</div>
-
-        <div class="results-container" id="listaResultados"></div>
+    <div class="filter-row">
+        <button class="filter-button" type="button" onclick="enfocarBusqueda()">
+            <span>☷</span> Filtra y Ordena
+        </button>
     </div>
 
-    <script>
-        let datosExcel = [];
+    <div class="separator"></div>
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // Validación de control de la librería instalada correctamente
-            if (typeof XLSX === 'undefined') {
-                const estado = document.getElementById('mensajeEstado');
-                estado.className = "status-alert status-error";
-                estado.innerText = "❌ No se pudo cargar el motor de lectura de Excel. Revisa tus conexiones CDN.";
-            } else {
-                cargarExcelMovil();
-            }
+    <div id="mensajeEstado" class="status">
+        Cargando catálogo...
+    </div>
+
+    <div id="resultsInfo" class="results-info"></div>
+
+    <div id="listaResultados" class="results-container">
+        <div class="empty">
+            <div class="big-icon">⌕</div>
+            <strong>Busca una parte</strong>
+            Escribe un código, nombre técnico o nombre común.
+        </div>
+    </div>
+
+</div>
+
+<script>
+/*
+=========================================================
+CONFIGURACIÓN
+=========================================================
+
+IMPORTANTE:
+1. Coloca este HTML en la misma carpeta donde está tu Excel.
+2. El Excel debe llamarse exactamente:
+   busqueda avanzada.xlsx
+
+3. El Excel debe contener la pestaña:
+   Busqueda avanzada
+
+4. Si tus imágenes están dentro de una carpeta llamada
+   "imagenes", deja:
+*/
+const CARPETA_IMAGENES = "imagenes/";
+
+/*
+Si tus imágenes están junto al HTML, cambia a:
+const CARPETA_IMAGENES = "";
+*/
+
+const NOMBRE_EXCEL = "busqueda avanzada.xlsx";
+const NOMBRE_HOJA = "Busqueda avanzada";
+
+let datosExcel = [];
+let clavesExcel = {
+    codigo: null,
+    tecnico: null,
+    comun: null,
+    imagen: null,
+    firma: null
+};
+
+const input = document.getElementById("searchInputAdvanced");
+const clearBtn = document.getElementById("clearBtn");
+const lista = document.getElementById("listaResultados");
+const estado = document.getElementById("mensajeEstado");
+const info = document.getElementById("resultsInfo");
+
+document.addEventListener("DOMContentLoaded", cargarExcel);
+
+input.addEventListener("input", function(){
+    clearBtn.style.display = this.value.trim() ? "block" : "none";
+    buscar();
+});
+
+clearBtn.addEventListener("click", function(){
+    input.value = "";
+    clearBtn.style.display = "none";
+    mostrarInicio();
+    input.focus();
+});
+
+function normalizar(texto){
+    return String(texto ?? "")
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g,"")
+        .trim();
+}
+
+function escaparHTML(texto){
+    return String(texto ?? "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#039;");
+}
+
+function buscarClave(claves, palabras){
+    return claves.find(clave => {
+        const n = normalizar(clave);
+        return palabras.some(p => n.includes(normalizar(p)));
+    }) || null;
+}
+
+async function cargarExcel(){
+    try{
+        if(typeof XLSX === "undefined"){
+            throw new Error("No se pudo cargar el lector de Excel. Revisa la conexión a Internet.");
+        }
+
+        const respuesta = await fetch(encodeURI(NOMBRE_EXCEL), {
+            cache:"no-store"
         });
 
-        function cargarExcelMovil() {
-            const estado = document.getElementById('mensajeEstado');
-            estado.innerHTML = 'Sincronizando inventario móvil...';
-            
-            // CORRECCIÓN CRÍTICA: Se codifica el espacio usando "%20" obligatorio para servidores como GitHub
-            fetch('busqueda%20avanzada.xlsx')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error("No se encontró el archivo 'busqueda avanzada.xlsx' en tu repositorio de GitHub.");
-                    }
-                    return response.arrayBuffer();
-                })
-                .then(data => {
-                    const workbook = XLSX.read(new Uint8Array(data), { type: 'array' });
-                    
-                    // Normalización del mapeo de pestañas
-                    const nombreHojaReal = workbook.SheetNames.find(n => n.trim().toLowerCase().replace(/á/g, 'a') === "busqueda avanzada");
-                    
-                    if (!nombreHojaReal) {
-                        throw new Error("No se encontró la pestaña llamada 'Busqueda avanzada' dentro de tu archivo Excel.");
-                    }
-                    
-                    const hojaData = workbook.Sheets[nombreHojaReal];
-                    datosExcel = XLSX.utils.sheet_to_json(hojaData);
-                    
-                    if (datosExcel.length > 0) {
-                        estado.style.display = 'none'; // Ocultamos mensaje de carga
-                        renderizarTarjetasAutoZone(datosExcel);
-                    } else {
-                        throw new Error("La hoja de Excel seleccionada no tiene filas de datos.");
-                    }
-                })
-                .catch(error => {
-                    console.error(error);
-                    estado.className = "status-alert status-error";
-                    estado.innerText = "⚠️ " + (error.message || "Error al sincronizar datos.");
-                });
-        }
-
-        // CORRECCIÓN: Renderizador estructurado para tarjetas dinámicas en móvil
-        function renderizarTarjetasAutoZone(listaProductos) {
-            const contenedor = document.getElementById('listaResultados');
-            const contador = document.getElementById('contadorResultados');
-            contenedor.innerHTML = '';
-
-            contador.style.display = 'inline-block';
-            contador.innerText = `${listaProductos.length} artículos listados`;
-
-            if(listaProductos.length === 0) {
-                contenedor.innerHTML = '<div class="status-alert">No hay coincidencias para tu búsqueda.</div>';
-                return;
-            }
-
-            listaProductos.forEach(prod => {
-                // Mapear dinámicamente las claves del JSON sin importar si el Excel viene en mayúsculas/minúsculas
-                const claves = Object.keys(prod);
-                const codigo = prod[claves.find(k => k.toLowerCase().includes('cod') || k.toLowerCase().includes('sku'))] || "N/A";
-                const descripcion = prod[claves.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('nom'))] || "Sin descripción";
-                const detalleAdicional = prod[claves.find(k => k.toLowerCase().includes('ubica') || k.toLowerCase().includes('det'))] || "";
-                const urlImagen = prod[claves.find(k => k.toLowerCase().includes('img') || k.toLowerCase().includes('foto'))] || "";
-
-                let cajaImagen = `<div class="product-img-box">SIN FOTO</div>`;
-                if(urlImagen && (urlImagen.match(/\.(jpeg|jpg|gif|png)$/i) || urlImagen.includes('drive.google'))) {
-                    cajaImagen = `<div class="product-img-box"><img src="${urlImagen}" alt="Parte"></div>`;
-                }
-
-                contenedor.innerHTML += `
-                    <div class="product-card">
-                        ${cajaImagen}
-                        <div class="product-info-box">
-                            <div class="product-title">${descripcion}</div>
-                            ${detalleAdicional ? `<div class="product-subtitle">${detalleAdicional}</div>` : ''}
-                            <div class="product-sku">Código: ${codigo}</div>
-                        </div>
-                    </div>
-                `;
-            });
-        }
-
-        // Lógica de filtrado en tiempo real en dispositivos móviles
-        function filtrarContenidoMovil() {
-            const textoBuscar = document.getElementById('searchInputAdvanced').value.toLowerCase().trim();
-        if (textoBuscar === "") {
-             renderizarTarjetasAutoZone(datosExcel);
-              return;
-                      }
-            const resultadosFiltrados = datosExcel.filter(prod => {
-                 return Object.values(prod).some(val =>
-           String(val).toLowerCase().includes(textoBuscar)
+        if(!respuesta.ok){
+            throw new Error(
+                "No se encontró el archivo '" + NOMBRE_EXCEL +
+                "'. Verifica que el nombre y la ubicación sean correctos."
             );
-           });
-             renderizarTarjetasAutoZone(resultadosFiltrados);
-               }
+        }
+
+        const buffer = await respuesta.arrayBuffer();
+        const workbook = XLSX.read(buffer, {
+            type:"array"
+        });
+
+        const hojaEncontrada = workbook.SheetNames.find(
+            nombre => normalizar(nombre) === normalizar(NOMBRE_HOJA)
+        );
+
+        if(!hojaEncontrada){
+            throw new Error(
+                "No se encontró la pestaña '" + NOMBRE_HOJA +
+                "' dentro del archivo Excel."
+            );
+        }
+
+        const hoja = workbook.Sheets[hojaEncontrada];
+
+        datosExcel = XLSX.utils.sheet_to_json(hoja, {
+            defval:"",
+            raw:false
+        });
+
+        if(!datosExcel.length){
+            throw new Error("La pestaña 'Busqueda avanzada' no contiene registros.");
+        }
+
+        const claves = Object.keys(datosExcel[0]);
+
+        /*
+        Según el Excel proporcionado:
+        CODIGO
+        Nombre tecnico
+        Nombre comun
+        IMAGEN
+        Firma
+        */
+        clavesExcel.codigo = buscarClave(claves, ["codigo","cod"]);
+        clavesExcel.tecnico = buscarClave(claves, ["nombre tecnico","tecnico"]);
+        clavesExcel.comun = buscarClave(claves, ["nombre comun","comun","nombre"]);
+        clavesExcel.imagen = buscarClave(claves, ["imagen","img","foto"]);
+        clavesExcel.firma = buscarClave(claves, ["firma"]);
+
+        estado.style.display = "none";
+        mostrarInicio();
+
+    }catch(error){
+        console.error(error);
+        estado.className = "status error";
+        estado.textContent = "⚠️ " + error.message;
+    }
+}
+
+function enfocarBusqueda(){
+    input.focus();
+}
+
+function mostrarInicio(){
+    info.style.display = "none";
+
+    lista.innerHTML = `
+        <div class="empty">
+            <div class="big-icon">⌕</div>
+            <strong>Busca una parte</strong>
+            Escribe un código, nombre técnico o nombre común.
+        </div>
+    `;
+}
+
+function buscar(){
+    const texto = normalizar(input.value);
+
+    if(!texto){
+        mostrarInicio();
+        return;
+    }
+
+    /*
+    Se permiten varias palabras.
+    Ejemplo:
+    "balero yale"
+    encontrará registros que contengan ambas palabras
+    en código, nombre técnico o nombre común.
+    */
+    const palabras = texto.split(/\s+/).filter(Boolean);
+
+    const resultados = datosExcel.filter(prod => {
+
+        const codigo = normalizar(prod[clavesExcel.codigo]);
+        const tecnico = normalizar(prod[clavesExcel.tecnico]);
+        const comun = normalizar(prod[clavesExcel.comun]);
+
+        const contenido = codigo + " " + tecnico + " " + comun;
+
+        return palabras.every(palabra => contenido.includes(palabra));
+    });
+
+    mostrarResultados(resultados);
+}
+
+function mostrarResultados(resultados){
+
+    info.style.display = "block";
+    info.textContent = resultados.length === 1
+        ? "1 resultado encontrado"
+        : resultados.length + " resultados encontrados";
+
+    if(resultados.length === 0){
+        lista.innerHTML = `
+            <div class="empty">
+                <div class="big-icon">⌕</div>
+                <strong>No encontramos esa parte</strong>
+                Prueba con otro código, nombre común o nombre técnico.
+            </div>
+        `;
+        return;
+    }
+
+    lista.innerHTML = "";
+
+    resultados.forEach((prod, indice) => {
+
+        const codigo = prod[clavesExcel.codigo] || "N/A";
+        const tecnico = prod[clavesExcel.tecnico] || "Sin nombre técnico";
+        const comun = prod[clavesExcel.comun] || "Sin nombre común";
+        const imagen = prod[clavesExcel.imagen] || "";
+        const firma = prod[clavesExcel.firma] || "";
+
+        const id = "detalle_" + indice;
+
+        let imagenHTML = `
+            <div class="no-image">
+                SIN FOTO
+            </div>
+        `;
+
+        if(String(imagen).trim()){
+            const nombreImagen = String(imagen).trim();
+
+            imagenHTML = `
+                <img
+                    src="${escaparHTML(CARPETA_IMAGENES + nombreImagen)}"
+                    alt="${escaparHTML(comun)}"
+                    loading="lazy"
+                    onerror="imagenNoEncontrada(this)"
+                >
+            `;
+        }
+
+        const card = document.createElement("div");
+        card.className = "product-card";
+
+        card.innerHTML = `
+            <div class="product-image">
+                ${imagenHTML}
+            </div>
+
+            <div class="product-info">
+                <div class="product-common">
+                    ${escaparHTML(comun)}
+                </div>
+
+                <div class="product-tech">
+                    ${escaparHTML(tecnico)}
+                </div>
+
+                <div class="product-code">
+                    No. de Parte: <strong>${escaparHTML(codigo)}</strong>
+                </div>
+
+                ${firma ? `
+                    <div class="product-firma">
+                        Responsable: ${escaparHTML(firma)}
+                    </div>
+                ` : ""}
+
+                <div class="product-actions">
+                    <button
+                        class="detail-button"
+                        type="button"
+                        onclick="mostrarDetalle('${id}')"
+                    >
+                        Ver información
+                    </button>
+                </div>
+
+                <div id="${id}" class="detail-panel">
+                    <div><strong>Código:</strong> ${escaparHTML(codigo)}</div>
+                    <div><strong>Nombre común:</strong> ${escaparHTML(comun)}</div>
+                    <div><strong>Nombre técnico:</strong> ${escaparHTML(tecnico)}</div>
+                    ${firma ? `<div><strong>Firma:</strong> ${escaparHTML(firma)}</div>` : ""}
+                </div>
+            </div>
+        `;
+
+        lista.appendChild(card);
+    });
+}
+
+function mostrarDetalle(id){
+    const panel = document.getElementById(id);
+    if(!panel) return;
+
+    panel.style.display =
+        panel.style.display === "block" ? "none" : "block";
+}
+
+function imagenNoEncontrada(img){
+    const contenedor = img.parentElement;
+
+    contenedor.innerHTML = `
+        <div class="no-image">
+            SIN FOTO
+        </div>
+    `;
+}
+</script>
+
+</body>
+</html>
