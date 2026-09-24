@@ -323,26 +323,47 @@ body{
         font-size:16px;
     }
 
+    /* CAMBIO CLAVE: Cambia la orientación a vertical en celular */
     .product-card{
-        min-height:145px;
-        padding:12px 10px;
-        gap:11px;
+        flex-direction: column; 
+        align-items: center;    /* Centra la imagen y el contenido */
+        text-align: center;     /* Centra los textos */
+        padding: 15px;
+        gap: 15px;
     }
 
+    /* La imagen se adapta al ancho disponible con un tamaño máximo ideal */
     .product-image{
-        width:82px;
-        min-width:82px;
-        height:105px;
+        width: 100%;
+        max-width: 150px;      /* Tamaño máximo de la imagen en celular */
+        height: 150px;         /* Altura fija cuadrada para mantener orden */
+    }
+
+    .no-image {
+        width: 100%;
+        height: 100%;
+    }
+
+    .product-info{
+        width: 100%;
     }
 
     .product-common{
-        font-size:15px;
+        font-size:16px;
     }
 
     .product-tech{
-        font-size:12px;
+        font-size:13px;
+    }
+    
+    /* El botón de detalle se estira para que sea más fácil de presionar con el dedo */
+    .detail-button {
+        width: 100%;
+        padding: 10px;
+        font-size: 13px;
     }
 }
+
 </style>
 </head>
 
